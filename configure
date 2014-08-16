@@ -1,0 +1,2 @@
+#!/bin/bash
+cabal configure --with-compiler ghc-7.6.3
