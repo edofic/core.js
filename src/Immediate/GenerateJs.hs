@@ -1,26 +1,39 @@
 module Immediate.GenerateJs where
 
 import Immediate.Syntax
-import qualified Language.JavaScript.Parser.AST as JS
+import qualified Language.ECMAScript3.Syntax as JS
 
-genName :: Name -> JS.JSNode
-genName = JS.NN . JS.JSIdentifier 
+runtime = JS.VarRef() $ JS.Id() "runtime"
+runtimeMkThunk = JS.DotRef() runtime $ JS.Id() "mkthunk"
 
-genLiteral :: Literal -> JS.JSNode
-genLiteral (LiteralInteger n) = JS.NN $ JS.JSDecimal $ show n
-genLiteral (LiteralRational r) = JS.NN $ JS.JSDecimal $ show r
-genLiteral (LiteralChar c) = JS.NN $ JS.JSStringLiteral '\'' [c]
-genLiteral (LiteralString s) = JS.NN $ JS.JSStringLiteral '\'' s
+wrapScope :: [JS.Statement ()] -> JS.Expression ()
+wrapScope stmts = JS.CallExpr() (JS.FuncExpr() Nothing [] stmts) []
 
-genExpr :: Expression a -> JS.JSNode
+genName :: Name -> JS.Expression()
+genName = JS.VarRef() . JS.Id() 
+
+genLiteral :: Literal -> JS.Expression()
+genLiteral (LiteralInteger n) = JS.IntLit() $ fromInteger n
+genLiteral (LiteralRational r) = JS.NumLit() $ fromRational r
+genLiteral (LiteralChar c) = JS.StringLit() [c]
+genLiteral (LiteralString s) = JS.StringLit() s
+
+genDef :: Definition -> JS.Statement ()
+genDef (Definition name expr) = 
+  JS.VarDeclStmt() $ [JS.VarDecl() (JS.Id() name) $ Just $ genExpr expr]
+
+genExpr :: Expression a -> JS.Expression ()
 genExpr (Lit lit) = genLiteral lit
 genExpr (Var name) = genName name
-genExpr (Lam name body) = error "Not implemented: lambda js"
-genExpr (App  f x) = error "Not implemented: js application"
-genExpr (Let definitons expr) = error "Not implemented: js let"
+genExpr (Lam name body) = JS.FuncExpr() Nothing [JS.Id() name] 
+  [JS.ReturnStmt() $ Just $ genExpr body]
+genExpr (App  f x) = JS.CallExpr() (genExpr f) [genExpr x]
+genExpr (Let definitons expr) = 
+  wrapScope $ fmap genDef definitons ++ [JS.ReturnStmt() $ Just $ genExpr expr]
 genExpr (Case expr name alts) = error "Not implemented: js case"
-genExpr (Force expr) = error "Not implemented: js force"
-genExpr (Defer expr) = error "Not implemented: js defer"
+genExpr (Force expr) = JS.CallExpr() (genExpr expr) []
+genExpr (Defer expr) = JS.CallExpr() runtime [JS.FuncExpr() Nothing [] [body]] where
+  body = JS.ReturnStmt() $ Just $ genExpr expr
 
 
 {-
@@ -30,5 +43,5 @@ data Alt = AltDefault (Expression Deferred)
          deriving (Show, Eq)
 -}
 
-genModule :: Module -> JS.JSNode
-genModule (Module name definitons) = error "Not implemented: js module"
+genModule :: Module -> JS.JavaScript()
+genModule (Module dependencies name definitons) = error "Not implemented: js module"

@@ -1,8 +1,10 @@
 module Immediate.Desugar where
 
 import Immediate.Syntax 
+import Immediate.Dependencies (usedModules)
 import qualified Language.Core.Core as C
 import Control.Applicative
+import qualified Data.Set as Set
 
 class RenderName a where
   renderName :: a -> Name
@@ -18,9 +20,15 @@ instance RenderName C.Bind where
   renderName (C.Tb _) = error "Not implemented: type binds"
 
 desugarModule :: C.Module -> Module
-desugarModule (C.Module mName tdefs vdefgs) = Module newName definitions where
+desugarModule cmod@(C.Module mName tdefs vdefgs) = 
+  Module newName depdendencies definitions 
+  where
   newName = renderName mName
+  depdendencies = fmap unAnMname $ Set.toList $ usedModules cmod
   definitions = (tdefs >>= desugarTypeDefinition) ++ (desugarDefinition <$> (vdefgs >>= unVdefg))
+
+unAnMname :: C.AnMname -> Dependency
+unAnMname (C.M (C.P e, parts, name)) = Dependency e parts name
 
 unVdefg :: C.Vdefg -> [C.Vdef]
 unVdefg (C.Rec vdefs) = vdefs
@@ -28,7 +36,10 @@ unVdefg (C.Nonrec def) = [def]
 
 
 desugarTypeDefinition :: C.Tdef -> [Definition]
-desugarTypeDefinition = error "Not implemented: desugarTypeDefinition"
+-- generate a function for each constructor and a destructor
+-- constructor takes values and returns an array
+-- destructor takes a value and a callback, returning result or undefined
+desugarTypeDefinition = error "Not implemented: desugarTypeDefinition" 
 
 desugarDefinition :: C.Vdef -> Definition 
 desugarDefinition (C.Vdef (name, _, expr)) = 
@@ -39,7 +50,7 @@ desugarExpr (C.Var name) = Var $ renderName name
 desugarExpr (C.Dcon name) = Var $ renderName name
 desugarExpr (C.Lit literal) = Defer $ Lit $ desugarLiteral literal
 desugarExpr (C.App f x) = Defer $ App (Force $  desugarExpr f) (desugarExpr x)
-desugarExpr (C.Lam bind expr) = Lam (renderName bind) (Force $ desugarExpr expr)
+desugarExpr (C.Lam bind expr) = Defer $ Lam (renderName bind) (Force $ desugarExpr expr)
 desugarExpr (C.Let vdefg expr) = Let (fmap bind $ unVdefg vdefg) (desugarExpr expr) where
   bind (C.Vdef (name, _, expr)) = Definition (renderName name) (desugarExpr expr)
 desugarExpr (C.Case expr (name, _) _ alts) = 
