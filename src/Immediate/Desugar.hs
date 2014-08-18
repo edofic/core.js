@@ -5,27 +5,27 @@ import Immediate.Dependencies (usedModules)
 import qualified Language.Core.Core as C
 import Control.Applicative
 import qualified Data.Set as Set
+import Data.List (intercalate)
 
 class RenderName a where
   renderName :: a -> Name
 
 instance RenderName C.AnMname where
-  renderName = error "Not implemented: RenderName AnMname"
+  renderName (C.M (C.P pkg, parts, name))= 
+    "__" ++ pkg ++ "__" ++ intercalate "_" (parts ++ [name])
 
-instance RenderName (C.Qual C.Var) where
-  renderName = error "Not implemented: RenderName (Qual Var)"
-
-instance RenderName C.Bind where
-  renderName (C.Vb (name, _)) = name
-  renderName (C.Tb _) = error "Not implemented: type binds"
+instance RenderName (C.Qual Name) where
+  renderName (mname, name) = 
+    (maybe "" (\mn -> renderName mn ++ ".") mname) ++ name
 
 desugarModule :: C.Module -> Module
 desugarModule cmod@(C.Module mName tdefs vdefgs) = 
-  Module newName depdendencies definitions 
+  Module newName depdendencies typeDefs valueDefs
   where
   newName = renderName mName
   depdendencies = fmap unAnMname $ Set.toList $ usedModules cmod
-  definitions = (tdefs >>= desugarTypeDefinition) ++ (desugarDefinition <$> (vdefgs >>= unVdefg))
+  typeDefs = desugarTypeDefinition `fmap` tdefs
+  valueDefs = desugarDefinition <$> (vdefgs >>= unVdefg)
 
 unAnMname :: C.AnMname -> Dependency
 unAnMname (C.M (C.P e, parts, name)) = Dependency e parts name
@@ -34,25 +34,24 @@ unVdefg :: C.Vdefg -> [C.Vdef]
 unVdefg (C.Rec vdefs) = vdefs
 unVdefg (C.Nonrec def) = [def]
 
+desugarTypeDefinition :: C.Tdef -> Tdef
+desugarTypeDefinition (C.Newtype name _ _ _) = Newtype (renderName name)
+desugarTypeDefinition (C.Data _ _ cdefs) = Data $ fmap mkCons cdefs where
+  mkCons (C.Constr name  _ args) = Constructor (renderName name) (length args)
 
-desugarTypeDefinition :: C.Tdef -> [Definition]
--- generate a function for each constructor and a destructor
--- constructor takes values and returns an array
--- destructor takes a value and a callback, returning result or undefined
-desugarTypeDefinition = error "Not implemented: desugarTypeDefinition" 
-
-desugarDefinition :: C.Vdef -> Definition 
+desugarDefinition :: C.Vdef -> Vdef 
 desugarDefinition (C.Vdef (name, _, expr)) = 
-  Definition (renderName name) (desugarExpr expr)
+  Vdef (renderName name) (desugarExpr expr)
 
 desugarExpr :: C.Exp -> Expression Deferred
 desugarExpr (C.Var name) = Var $ renderName name
 desugarExpr (C.Dcon name) = Var $ renderName name
 desugarExpr (C.Lit literal) = Defer $ Lit $ desugarLiteral literal
 desugarExpr (C.App f x) = Defer $ App (Force $  desugarExpr f) (desugarExpr x)
-desugarExpr (C.Lam bind expr) = Defer $ Lam (renderName bind) (Force $ desugarExpr expr)
+desugarExpr (C.Lam (C.Tb _) expr) = desugarExpr expr
+desugarExpr (C.Lam (C.Vb (name, _)) expr) = Defer $ Lam name $ Force $ desugarExpr expr
 desugarExpr (C.Let vdefg expr) = Let (fmap bind $ unVdefg vdefg) (desugarExpr expr) where
-  bind (C.Vdef (name, _, expr)) = Definition (renderName name) (desugarExpr expr)
+  bind (C.Vdef (name, _, expr)) = Vdef (renderName name) (desugarExpr expr)
 desugarExpr (C.Case expr (name, _) _ alts) = 
   Case (desugarExpr expr) name (fmap desugarAlt alts)
 desugarExpr (C.Note _ expr) = desugarExpr expr

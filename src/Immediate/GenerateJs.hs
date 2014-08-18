@@ -18,8 +18,8 @@ genLiteral (LiteralRational r) = JS.NumLit() $ fromRational r
 genLiteral (LiteralChar c) = JS.StringLit() [c]
 genLiteral (LiteralString s) = JS.StringLit() s
 
-genDef :: Definition -> JS.Statement ()
-genDef (Definition name expr) = 
+genDef :: Vdef -> JS.Statement ()
+genDef (Vdef name expr) = 
   JS.VarDeclStmt() $ [JS.VarDecl() (JS.Id() name) $ Just $ genExpr expr]
 
 genExpr :: Expression a -> JS.Expression ()
@@ -44,4 +44,4 @@ data Alt = AltDefault (Expression Deferred)
 -}
 
 genModule :: Module -> JS.JavaScript()
-genModule (Module dependencies name definitons) = error "Not implemented: js module"
+genModule (Module dependencies name tdefs vdefs) = error "Not implemented: js module"
