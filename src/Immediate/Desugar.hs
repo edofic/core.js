@@ -28,7 +28,7 @@ desugarModule cmod@(C.Module mName tdefs vdefgs) =
   valueDefs = desugarDefinition <$> (vdefgs >>= unVdefg)
 
 unAnMname :: C.AnMname -> Dependency
-unAnMname (C.M (C.P e, parts, name)) = Dependency e parts name
+unAnMname whole@(C.M (C.P e, parts, name)) = Dependency (renderName whole) (e, parts, name)
 
 unVdefg :: C.Vdefg -> [C.Vdef]
 unVdefg (C.Rec vdefs) = vdefs

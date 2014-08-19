@@ -38,7 +38,7 @@ data Tdef = Data [Constructor]
           | Newtype Name 
           deriving (Eq, Show)
 
-data Dependency = Dependency Name [Name] Name deriving (Eq, Show)
+data Dependency = Dependency Name (Name, [Name], Name) deriving (Eq, Show)
 
 data Module = Module Name [Dependency] [Tdef] [Vdef] deriving (Eq, Show)
 

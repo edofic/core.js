@@ -1,8 +1,14 @@
 module Main where
 
-import qualified Immediate.Syntax
-import qualified Immediate.Desugar
-import qualified Immediate.GenerateJs
-import qualified Immediate.Dependencies
+import Immediate.Simplify (simplify)
+import Immediate.Desugar (desugarModule)
+import Immediate.GenerateJs (genModule)
+import Language.Core.ParsecParser (parseCore)
+import Language.ECMAScript3.PrettyPrint (prettyPrint)
 
-main = putStrLn "o hai"
+import System.Environment (getArgs)
+
+main = do
+  [filepath] <- getArgs
+  Right core <- parseCore filepath
+  print $ prettyPrint $ genModule $ simplify $ desugarModule core
