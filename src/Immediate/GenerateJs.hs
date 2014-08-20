@@ -6,7 +6,7 @@ import qualified Language.ECMAScript3.Syntax.QuasiQuote as JsQ
 
 import Data.List (intercalate)
 
-runtime = var "runtime"
+runtime = var "___runtime"
 runtimeMkThunk = JS.DotRef() runtime $ JS.Id() "mkthunk"
 varDecl name expr = JS.VarDeclStmt() $ [JS.VarDecl() (JS.Id() name) $ Just $ expr]
 var = JS.VarRef() . JS.Id()
@@ -100,11 +100,13 @@ genTdef (Newtype name) = [apply, unapply] where
 genImport :: Dependency -> JS.Statement()
 genImport (Dependency varName (exe, parts, name)) = 
   varDecl varName $ JS.CallExpr() (var "require") [JS.StringLit() path] where
-    path = exe ++ "/" ++ intercalate "_" (parts ++ [name])
+    path = exe ++ "/" ++ intercalate "_" (parts ++ [name]) ++ ".js"
 
 genModule :: Module -> JS.JavaScript ()
 genModule (Module name dependencies tdefs vdefs) = JS.Script() $ prolog ++ imprts ++ types ++ values where
   prolog = [varDecl name $ var "exports"]
-  imprts = fmap genImport dependencies
+  imprts = fmap genImport (runtimeDep : dependencies)
   types = tdefs >>= genTdef
   values = fmap genVdef vdefs
+  runtimeDep = Dependency "___runtime" ("runtime", [], "runtime")
+

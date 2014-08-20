@@ -8,15 +8,7 @@ import Data.Maybe
 import Data.List
 
 usedModules :: Module -> S.Set AnMname
-usedModules (Module _ tds vds) = usedModuleTds tds `S.union` usedModuleVds vds
-
-usedModuleTds :: [Tdef] -> S.Set AnMname
-usedModuleTds = some usedModuleTd
-
-usedModuleTd :: Tdef -> S.Set AnMname
-usedModuleTd (Data _ _ cds) = S.unions
-  (map (\ (Constr _ _ ts) -> some usedModuleTy ts) cds)
-usedModuleTd (Newtype _ _ _ t) = usedModuleTy t
+usedModules (Module _ tds vds) = usedModuleVds vds
 
 usedModuleVds :: [Vdefg] -> S.Set AnMname
 usedModuleVds = some usedModuleVdefg
@@ -26,7 +18,7 @@ usedModuleVdefg (Rec vds) = some usedModuleVdef vds
 usedModuleVdefg (Nonrec vdef) = usedModuleVdef vdef
 
 usedModuleVdef :: Vdef -> S.Set AnMname
-usedModuleVdef (Vdef (_,t,e)) = usedModuleTy t `S.union` usedModuleExp e
+usedModuleVdef (Vdef (_,t,e)) = usedModuleExp e
 
 usedModuleExp :: Exp -> S.Set AnMname
 usedModuleExp (Var v) | Just m' <- getModule v = S.singleton m'
@@ -35,27 +27,13 @@ usedModuleExp (Var _) = S.empty
 usedModuleExp (Dcon _) = S.empty
 usedModuleExp (Lit _) = S.empty
 usedModuleExp (App a b) = someExps [a,b]
-usedModuleExp (Appt e t) = usedModuleExp e `S.union` usedModuleTy t
+usedModuleExp (Appt e _) = usedModuleExp e 
 usedModuleExp (Lam _ e) = usedModuleExp e
 usedModuleExp (Let vd e) = usedModuleVdefg vd `S.union` usedModuleExp e
-usedModuleExp (Case e _ t alts) = usedModuleExp e `S.union`
-  usedModuleTy t `S.union` usedModuleAlts alts
-usedModuleExp (Cast e t) = usedModuleExp e `S.union` usedModuleTy t
+usedModuleExp (Case e _ _ alts) = usedModuleExp e `S.union` usedModuleAlts alts
+usedModuleExp (Cast e _) = usedModuleExp e
 usedModuleExp (Note _ e) = usedModuleExp e
-usedModuleExp (External _ t) = usedModuleTy t
-
-usedModuleTy :: Ty -> S.Set AnMname
-usedModuleTy (Tvar _) = S.empty
-usedModuleTy (Tcon t) | Just m' <- getModule t = S.singleton m'
-usedModuleTy (Tcon _) = S.empty
-usedModuleTy (Tapp t u) = usedModuleTy t `S.union` usedModuleTy u
-usedModuleTy (Tforall _ t) = usedModuleTy t
-usedModuleTy (TransCoercion t u) = usedModuleTy t `S.union` usedModuleTy u
-usedModuleTy (SymCoercion t) = usedModuleTy t
-usedModuleTy (UnsafeCoercion t u) = usedModuleTy t `S.union` usedModuleTy u
-usedModuleTy (InstCoercion t u) = usedModuleTy t `S.union` usedModuleTy u
-usedModuleTy (LeftCoercion t) = usedModuleTy t
-usedModuleTy (RightCoercion t) = usedModuleTy t
+usedModuleExp (External _ _) = S.empty
 
 usedModuleAlts :: [Alt] -> S.Set AnMname
 usedModuleAlts = some go'
