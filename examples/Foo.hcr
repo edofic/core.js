@@ -1,17 +1,21 @@
 %module main:Foo
-  %data main:Foo.Foo aapB =
-    {main:Foo.Foo aapB ghczmprim:GHCziTypes.Int aapB;
+  %data main:Foo.Foo aapE =
+    {main:Foo.Foo aapE ghczmprim:GHCziTypes.Int aapE;
      main:Foo.Bar ghczmprim:GHCziTypes.Float};
   %newtype main:Foo.Bazz main:Foo.NTCoZCBazz
     = main:Foo.Foo
       (ghczmprim:GHCziTypes.ZMZN ghczmprim:GHCziTypes.Char);
-  main:Foo.foo2bool :: %forall taId . (main:Foo.Foo taId) ->
-                                      ghczmprim:GHCziTypes.Bool =
-    \ @ taIf (dsdIo::main:Foo.Foo taIf) ->
-        %case ghczmprim:GHCziTypes.Bool dsdIo
-        %of (wildX4::main:Foo.Foo taIf)
+  %data main:Foo.Bl =
+    {main:Foo.Tr;
+     main:Foo.Fl};
+  main:Foo.foo2bool :: %forall taIn . (main:Foo.Foo taIn) ->
+                                      main:Foo.Bl =
+    \ @ taIp (dsdIy::main:Foo.Foo taIp) ->
+        %case main:Foo.Bl dsdIy %of (wildX4::main:Foo.Foo taIp)
           {main:Foo.Foo
-           (ds1dIp::taIf) (ds2dIq::ghczmprim:GHCziTypes.Int) (ds3dIr::taIf) ->
-             ghczmprim:GHCziTypes.True;
-           main:Foo.Bar (ds1dIs::ghczmprim:GHCziTypes.Float) ->
-             ghczmprim:GHCziTypes.False};
+           (ds1dIzz::taIp)
+           (ds2dIA::ghczmprim:GHCziTypes.Int)
+           (ds3dIB::taIp) ->
+             main:Foo.Tr;
+           main:Foo.Bar (ds1dIC::ghczmprim:GHCziTypes.Float) ->
+             main:Foo.Fl};

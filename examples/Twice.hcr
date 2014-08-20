@@ -1,3 +1,6 @@
 %module main:Twice
-  main:Twice.twice :: %forall taHC . (taHC -> taHC) -> taHC -> taHC =
-    \ @ taHE (fapw::taHE -> taHE) (xapx::taHE) -> fapw (fapw xapx);
+  main:Twice.once :: %forall taHT t1aHU . (t1aHU -> taHT) ->
+                                          t1aHU -> taHT =
+    \ @ taHW @ t1aHX (fapx::t1aHX -> taHW) (xapy::t1aHX) -> fapx xapy;
+  main:Twice.twice :: %forall taHF . (taHF -> taHF) -> taHF -> taHF =
+    \ @ taHH (fapzz::taHH -> taHH) (xapA::taHH) -> fapzz (fapzz xapA);

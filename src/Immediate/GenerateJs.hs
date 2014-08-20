@@ -8,7 +8,6 @@ import Data.List (intercalate)
 
 runtime = var "___runtime"
 runtimeMkThunk = JS.DotRef() runtime $ JS.Id() "mkthunk"
-varDecl name expr = JS.VarDeclStmt() $ [JS.VarDecl() (JS.Id() name) $ Just $ expr]
 var = JS.VarRef() . JS.Id()
 
 wrapScope :: [JS.Statement ()] -> JS.Expression ()
@@ -21,14 +20,14 @@ genLiteral (LiteralChar c) = JS.StringLit() [c]
 genLiteral (LiteralString s) = JS.StringLit() s
 
 
-genVdefJs :: Name -> JS.Expression() -> JS.Statement()
-genVdefJs name expr =
+varDecl :: Name -> JS.Expression() -> JS.Statement()
+varDecl name expr =
   if elem '.' name 
   then JS.ExprStmt() $ JS.AssignExpr() JS.OpAssign (JS.LVar() name) expr
-  else varDecl name expr
+  else JS.VarDeclStmt() $ [JS.VarDecl() (JS.Id() name) $ Just $ expr]
 
 genVdef :: Vdef -> JS.Statement ()
-genVdef (Vdef name expr) = genVdefJs name $ genExpr expr
+genVdef (Vdef name expr) = varDecl name $ genExpr expr
 
 defer :: JS.Expression() -> JS.Expression()
 defer expr = JS.CallExpr() runtimeMkThunk [JS.FuncExpr() Nothing [] [body]] where
@@ -75,24 +74,27 @@ data Alt = AltDefault (Expression Deferred)
 
 genTdef :: Tdef -> [JS.Statement ()]
 genTdef (Data constructors) = concat $ zipWith mkData [0..] constructors where
-  mkData i (Constructor name arity) = [varDecl name $ apply arity, varDecl name $ unapply] where
-    apply 0 = defer $ JS.ArrayLit() $ 
-      (JS.IntLit() i) : fmap (\p -> var $ "arg" ++ show p) [arity,arity-1..1]
-    apply p = defer $ JS.FuncExpr() Nothing [JS.Id() $ "arg" ++ show p]
-                      [JS.ReturnStmt() $ Just $ apply (p-1)]
-    
-    unapply = defer $ JS.FuncExpr() Nothing [JS.Id() "data", JS.Id() "f"] [force, iff] where
-        force = JS.ExprStmt() $ JS.AssignExpr() JS.OpAssign (JS.LVar() "data") $ forceExp $ var "data"
-        iff = JS.IfSingleStmt() predicate $ JS.ExprStmt() callback 
-        predicate = JS.InfixExpr() JS.OpEq consId $ JS.IntLit() i
-        consId = JS.BracketRef() (var "data") $ JS.IntLit() 0
-        callback = JS.CallExpr() (JS.DotRef() (var "f") (JS.Id() "apply")) [var "undefined", args]
-        args = JS.CallExpr() (JS.DotRef() (var "data") (JS.Id() "slice")) [JS.IntLit() 1]
+  mkData i (Constructor name arity) = 
+    [ varDecl name $ defer $ apply arity
+    , varDecl (name ++ ".unapply") $ unapply
+    ] where
+      apply 0 = JS.ArrayLit() $ 
+        (JS.IntLit() i) : fmap (\p -> var $ "arg" ++ show p) [arity,arity-1..1]
+      apply p = JS.FuncExpr() Nothing [JS.Id() $ "arg" ++ show p]
+                [JS.ReturnStmt() $ Just $ apply (p-1)]
+      
+      unapply = JS.FuncExpr() Nothing [JS.Id() "data", JS.Id() "f"] [force, iff] where
+          force = JS.ExprStmt() $ JS.AssignExpr() JS.OpAssign (JS.LVar() "data") $ forceExp $ var "data"
+          iff = JS.IfSingleStmt() predicate $ JS.ReturnStmt() $ Just $ callback 
+          predicate = JS.InfixExpr() JS.OpEq consId $ JS.IntLit() i
+          consId = JS.BracketRef() (var "data") $ JS.IntLit() 0
+          callback = JS.CallExpr() (JS.DotRef() (var "f") (JS.Id() "apply")) [var "undefined", args]
+          args = JS.CallExpr() (JS.DotRef() (var "data") (JS.Id() "slice")) [JS.IntLit() 1]
 
 genTdef (Newtype name) = [apply, unapply] where
-  apply = genVdefJs name $ defer $ JS.FuncExpr() Nothing [JS.Id() "x"] 
+  apply = varDecl name $ defer $ JS.FuncExpr() Nothing [JS.Id() "x"] 
                                   [JS.ReturnStmt() $ Just $ var "x"]
-  unapply = genVdefJs (name ++ ".unapply") $ defer $
+  unapply = varDecl (name ++ ".unapply") $ defer $
     JS.FuncExpr() Nothing [JS.Id() "x", JS.Id() "f"] 
       [JS.ReturnStmt() $ Just $ JS.CallExpr() (var "f") [var "x"]]
  
@@ -100,7 +102,7 @@ genTdef (Newtype name) = [apply, unapply] where
 genImport :: Dependency -> JS.Statement()
 genImport (Dependency varName (exe, parts, name)) = 
   varDecl varName $ JS.CallExpr() (var "require") [JS.StringLit() path] where
-    path = exe ++ "/" ++ intercalate "_" (parts ++ [name]) ++ ".js"
+    path = "../" ++ exe ++ "/" ++ intercalate "_" (parts ++ [name]) ++ ".js"
 
 genModule :: Module -> JS.JavaScript ()
 genModule (Module name dependencies tdefs vdefs) = JS.Script() $ prolog ++ imprts ++ types ++ values where
