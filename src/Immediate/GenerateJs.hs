@@ -34,6 +34,21 @@ defer :: JS.Expression() -> JS.Expression()
 defer expr = JS.CallExpr() runtimeMkThunk [JS.FuncExpr() Nothing [] [body]] where
   body = JS.ReturnStmt() $ Just expr
 
+forceExp :: JS.Expression() -> JS.Expression()
+forceExp expr = JS.CallExpr() expr []
+
+genAlt :: Name -> Alt -> JS.Expression()
+genAlt _ (AltDefault rhs) = genExpr rhs
+genAlt name (AltLit lit rhs) = JS.CondExpr() cond (genExpr rhs) $ var "undefined" where
+  cond = JS.InfixExpr() JS.OpStrictEq (var name) (genLiteral lit)
+genAlt name (AltCon conName names rhs) = 
+  JS.CallExpr() (JS.DotRef() (var conName) (JS.Id() "unapply")) 
+    [ var name
+    , JS.FuncExpr() Nothing (JS.Id() `fmap` names) 
+        [ JS.ReturnStmt() $ Just $ genExpr rhs
+        ]
+    ]
+
 genExpr :: Expression a -> JS.Expression ()
 genExpr (Lit lit) = genLiteral lit
 genExpr (Var name) = var name
@@ -42,8 +57,12 @@ genExpr (Lam name body) = JS.FuncExpr() Nothing [JS.Id() name]
 genExpr (App  f x) = JS.CallExpr() (genExpr f) [genExpr x]
 genExpr (Let definitons expr) = 
   wrapScope $ fmap genVdef definitons ++ [JS.ReturnStmt() $ Just $ genExpr expr]
-genExpr (Case expr name alts) = error "Not implemented: js case"
-genExpr (Force expr) = JS.CallExpr() (genExpr expr) []
+genExpr (Case expr name alts) = wrapScope 
+  [ varDecl name $ genExpr expr
+  , JS.ReturnStmt() $ Just $ foldr joinAlt (var "undefined") alts
+  ] where
+    joinAlt alt els = JS.InfixExpr() JS.OpLOr (genAlt name alt) els 
+genExpr (Force expr) = forceExp $ genExpr expr
 genExpr (Defer expr) = defer $ genExpr expr
 
 
@@ -63,8 +82,7 @@ genTdef (Data constructors) = concat $ zipWith mkData [0..] constructors where
                       [JS.ReturnStmt() $ Just $ apply (p-1)]
     
     unapply = defer $ JS.FuncExpr() Nothing [JS.Id() "data", JS.Id() "f"] [force, iff] where
-        force = JS.ExprStmt() $ JS.AssignExpr() JS.OpAssign (JS.LVar() "data") $
-                  JS.CallExpr() (var "data") []
+        force = JS.ExprStmt() $ JS.AssignExpr() JS.OpAssign (JS.LVar() "data") $ forceExp $ var "data"
         iff = JS.IfSingleStmt() predicate $ JS.ExprStmt() callback 
         predicate = JS.InfixExpr() JS.OpEq consId $ JS.IntLit() i
         consId = JS.BracketRef() (var "data") $ JS.IntLit() 0
