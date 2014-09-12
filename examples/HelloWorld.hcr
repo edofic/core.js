@@ -1,0 +1,13 @@
+%module main:HelloWorld
+  main:HelloWorld.mainzq :: ghczmprim:GHCziTypes.IO
+                            ghczmprim:GHCziTuple.Z0T =
+    base:SystemziIO.putStrLn
+    (ghczmprim:GHCziTypes.ZC @ ghczmprim:GHCziTypes.Char
+     (ghczmprim:GHCziTypes.Czh ('o'::ghczmprim:GHCziPrim.Charzh))
+     (ghczmprim:GHCziCString.unpackCStringzh
+      (" hai"::ghczmprim:GHCziPrim.Addrzh)));
+  main:HelloWorld.main :: ghczmprim:GHCziTypes.IO
+                          ghczmprim:GHCziTuple.Z0T =
+    base:SystemziIO.putStrLn
+    (ghczmprim:GHCziCString.unpackCStringzh
+     ("o hai"::ghczmprim:GHCziPrim.Addrzh));

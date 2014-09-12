@@ -10,3 +10,17 @@ exports.mkthunk = function(f) {
     return value;
   };
 };
+
+var primitiveIO = function(f) {
+  return function (world) {
+      return [0, world, f()];
+  };
+};
+
+exports.callJs = exports.mkthunk(function() {
+  return function(js) {
+    return function(world) {
+      return [0, world, eval(js)];
+    };
+  };
+});

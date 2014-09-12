@@ -1,0 +1,15 @@
+%module main:Maya
+  areW :: (ghczmprim:GHCziPrim.Statezh ghczmprim:GHCziPrim.RealWorld)
+          ->
+          ghczmprim:GHCziPrim.Z2H
+          (ghczmprim:GHCziPrim.Statezh ghczmprim:GHCziPrim.RealWorld)
+          ghczmprim:GHCziTuple.Z0T =
+    \ (waeH::ghczmprim:GHCziPrim.Statezh
+             ghczmprim:GHCziPrim.RealWorld) ->
+        ghczmprim:GHCziPrim.Z2H
+        @ (ghczmprim:GHCziPrim.Statezh ghczmprim:GHCziPrim.RealWorld)
+        @ ghczmprim:GHCziTuple.Z0T waeH ghczmprim:GHCziTuple.Z0T;
+  main:Maya.maya :: ghczmprim:GHCziTypes.IO
+                    ghczmprim:GHCziTuple.Z0T =
+    %cast (areW)
+    (%sym (ghczmprim:GHCziTypes.NTCoZCIO ghczmprim:GHCziTuple.Z0T));

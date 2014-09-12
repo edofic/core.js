@@ -1,0 +1,14 @@
+%module main:Foo
+  main:Foo.main :: ghczmprim:GHCziTypes.IO ghczmprim:GHCziTuple.Z0T =
+    base:GHCziBase.zgzg @ ghczmprim:GHCziTypes.IO
+    base:GHCziBase.zdfMonadIO @ ghczmprim:GHCziTuple.Z0T
+    @ ghczmprim:GHCziTuple.Z0T
+    (base:SystemziIO.putChar
+     (ghczmprim:GHCziTypes.Czh ('h'::ghczmprim:GHCziPrim.Charzh)))
+    (base:GHCziBase.zgzg @ ghczmprim:GHCziTypes.IO
+     base:GHCziBase.zdfMonadIO @ ghczmprim:GHCziTuple.Z0T
+     @ ghczmprim:GHCziTuple.Z0T
+     (base:SystemziIO.putChar
+      (ghczmprim:GHCziTypes.Czh ('a'::ghczmprim:GHCziPrim.Charzh)))
+     (base:SystemziIO.putChar
+      (ghczmprim:GHCziTypes.Czh ('i'::ghczmprim:GHCziPrim.Charzh))));
