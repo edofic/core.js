@@ -55,8 +55,8 @@ desugarExpr (C.Let vdefg expr) = Let (fmap bind $ unVdefg vdefg) (desugarExpr ex
 desugarExpr (C.Case expr (name, _) _ alts) = 
   Case (desugarExpr expr) name (fmap desugarAlt alts)
 desugarExpr (C.Note _ expr) = desugarExpr expr
-desugarExpr (C.Appt _ _) = error "Not implemented: expression Appt"
-desugarExpr (C.Cast _ _) = error "Not implemented: expression Cast"
+desugarExpr (C.Appt expr _) = desugarExpr expr
+desugarExpr (C.Cast expr _) = desugarExpr expr
 desugarExpr (C.External _ _) = error "Not implemented: expression External"
 
 desugarLiteral :: C.Lit -> Literal
