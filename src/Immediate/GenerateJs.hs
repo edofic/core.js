@@ -3,19 +3,21 @@ module Immediate.GenerateJs where
 import Immediate.Syntax
 import qualified Language.ECMAScript3.Syntax as JS
 import qualified Language.ECMAScript3.Syntax.QuasiQuote as JsQ
+import GHC.Real
 
 import Data.List (intercalate)
 
 runtime = var "___runtime"
 runtimeMkThunk = JS.DotRef() runtime $ JS.Id() "mkthunk"
 var = JS.VarRef() . JS.Id()
+jsInt n = JS.CallExpr() (JS.DotRef() runtime $ JS.Id() "intlit") [JS.StringLit() $ show n]
 
 wrapScope :: [JS.Statement ()] -> JS.Expression ()
 wrapScope stmts = JS.CallExpr() (JS.FuncExpr() Nothing [] stmts) []
 
 genLiteral :: Literal -> JS.Expression()
-genLiteral (LiteralInteger n) = JS.IntLit() $ fromInteger n
-genLiteral (LiteralRational r) = JS.NumLit() $ fromRational r
+genLiteral (LiteralInteger n) = jsInt n
+genLiteral (LiteralRational (e :% d)) = JS.CallExpr() (JS.DotRef() (jsInt e) $ JS.Id() "div") [jsInt d]
 genLiteral (LiteralChar c) = JS.StringLit() [c]
 genLiteral (LiteralString s) = JS.StringLit() s
 

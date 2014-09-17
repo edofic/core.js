@@ -1,3 +1,5 @@
+var Big = require('./big.js');
+
 exports.mkthunk = function(f) {
   var memod, value;
   memod = false;
@@ -24,3 +26,7 @@ exports.callJs = exports.mkthunk(function() {
     };
   };
 });
+
+exports.intlit = function(str) {
+  return new Big(str);
+};
